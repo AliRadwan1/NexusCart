@@ -1,4 +1,6 @@
-package com.nexus_cart.microservices.walet_microservice.user;
+package com.nexus_cart.microservices.walet_microservice.users;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,6 +22,8 @@ public class User {
 	private String lastName;
 
 	private String email;
+
+	@JsonIgnore
 	private String password;
 
 	public User() {
