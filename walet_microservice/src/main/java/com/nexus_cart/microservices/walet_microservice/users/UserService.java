@@ -21,8 +21,11 @@ public class UserService {
 			throw new UserAlreadyExistsException("A user already exists with this email");
 		}
 		
-		String newUserID = UUID.randomUUID().toString();
-		User newUser = new User(newUserID, firstName, lastName, email, password);
+		User newUser = new User();
+	    newUser.setFirstName(firstName);
+	    newUser.setLastName(lastName);
+	    newUser.setEmail(email);
+	    newUser.setPassword(password);
 
 		userRepository.save(newUser);
 	}
@@ -35,9 +38,9 @@ public class UserService {
 			throw new UserNotFoundException("No user found with this email");
 		}
 
-		if (!password.equals(user.get().getPassword())) {
-			throw new UserAuthenticationException("Password is incorrect");
-		}
+		if (password == null || user.get().getPassword() == null || !password.equals(user.get().getPassword())) {
+	        throw new UserAuthenticationException("Invalid email or password");
+	    }
 
 		return user.get();
 	}

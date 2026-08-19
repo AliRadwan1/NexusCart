@@ -1,10 +1,11 @@
 package com.nexus_cart.microservices.walet_microservice.users;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -12,7 +13,7 @@ import jakarta.persistence.Table;
 @Table(name = "users")
 public class User {
 	@Id
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.UUID)
 	private String id;
 
 	@Column(name = "first_name")
@@ -23,7 +24,10 @@ public class User {
 
 	private String email;
 
-	@JsonIgnore
+	// WRITE_ONLY allows Spring to read/deserialize the password from incoming JSON
+	// requests (during registration) while hiding it in outgoing JSON responses (so
+	// passwords are never leaked in API outputs).
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	private String password;
 
 	public User() {
