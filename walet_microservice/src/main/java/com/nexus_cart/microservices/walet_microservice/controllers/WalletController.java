@@ -1,5 +1,7 @@
 package com.nexus_cart.microservices.walet_microservice.controllers;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nexus_cart.microservices.walet_microservice.dto.TransferRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.WalletTransactionRequest;
 import com.nexus_cart.microservices.walet_microservice.wallets.Wallet;
 import com.nexus_cart.microservices.walet_microservice.wallets.WalletService;
@@ -21,13 +24,6 @@ import jakarta.validation.Valid;
 public class WalletController {
 	@Autowired
 	private WalletService walletService;
-
-	@PostMapping("/create/{userId}")
-	public ResponseEntity<Wallet> createWallet(@PathVariable String userId) {
-		Wallet newWallet = walletService.createWallet(userId);
-
-		return ResponseEntity.status(HttpStatus.CREATED).body(newWallet);
-	}
 
 	@GetMapping("/user/{userId}")
 	public ResponseEntity<Wallet> retrieveWalletByUserId(@PathVariable String userId) {
@@ -48,5 +44,15 @@ public class WalletController {
 		Wallet updatedWallet = walletService.withdraw(request.getUserId(), request.getAmount());
 		
 		return ResponseEntity.status(HttpStatus.OK).body(updatedWallet);
+	}
+	
+	@PostMapping("/transfer")
+	public ResponseEntity<Map<String, String>> transfer(@Valid @RequestBody TransferRequest request) {
+	    walletService.transfer(
+	        request.getSenderUserId(), 
+	        request.getReceiverUserId(), 
+	        request.getAmount()
+	    );
+	    return ResponseEntity.ok(Map.of("message", "Transfer completed successfully"));
 	}
 }

@@ -1,5 +1,7 @@
 package com.nexus_cart.microservices.walet_microservice.controllers;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nexus_cart.microservices.walet_microservice.dto.LoginRequest;
+import com.nexus_cart.microservices.walet_microservice.dto.RegisterRequest;
 import com.nexus_cart.microservices.walet_microservice.users.User;
 import com.nexus_cart.microservices.walet_microservice.users.UserService;
 
@@ -23,11 +26,11 @@ public class UserController {
 	private UserService userService;
 
 	@PostMapping("/register")
-	public ResponseEntity<String> registerUser(@Valid @RequestBody User request) {
+	public ResponseEntity<Map<String, String>> registerUser(@Valid @RequestBody RegisterRequest request) {
 		userService.registerUser(request.getFirstName(), request.getLastName(), request.getEmail(),
 				request.getPassword());
 
-		return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
+		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message","User registered successfully"));
 	}
 
 	@PostMapping("/login")

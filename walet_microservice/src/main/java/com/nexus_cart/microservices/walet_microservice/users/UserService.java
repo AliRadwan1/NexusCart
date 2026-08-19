@@ -1,20 +1,27 @@
 package com.nexus_cart.microservices.walet_microservice.users;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.nexus_cart.microservices.walet_microservice.exceptions.*;
+import com.nexus_cart.microservices.walet_microservice.exceptions.UserAlreadyExistsException;
+import com.nexus_cart.microservices.walet_microservice.exceptions.UserAuthenticationException;
+import com.nexus_cart.microservices.walet_microservice.exceptions.UserNotFoundException;
+import com.nexus_cart.microservices.walet_microservice.wallets.WalletService;
 
 @Service
 public class UserService {
 	@Autowired
 	private UserRepository userRepository;
+	
+	@Autowired
+	private WalletService walletService;
 
 	// Register User
-	public void registerUser(String firstName, String lastName, String email, String password) {
+	@Transactional
+	public User registerUser(String firstName, String lastName, String email, String password) {
 		Optional<User> user = userRepository.findByEmail(email);
 
 		if (user.isPresent()) {
@@ -28,6 +35,10 @@ public class UserService {
 	    newUser.setPassword(password);
 
 		userRepository.save(newUser);
+		
+		walletService.createWallet(newUser.getId());
+		
+		return newUser;
 	}
 
 	// Login
