@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nexus_cart.microservices.walet_microservice.dto.AuthResponse;
 import com.nexus_cart.microservices.walet_microservice.dto.LoginRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.RegisterRequest;
+import com.nexus_cart.microservices.walet_microservice.security.JwtUtils;
 import com.nexus_cart.microservices.walet_microservice.users.User;
 import com.nexus_cart.microservices.walet_microservice.users.UserService;
 
@@ -24,6 +26,9 @@ import jakarta.validation.Valid;
 public class UserController {
 	@Autowired
 	private UserService userService;
+	
+	@Autowired
+	private JwtUtils jwtUtils;
 
 	@PostMapping("/register")
 	public ResponseEntity<Map<String, String>> registerUser(@Valid @RequestBody RegisterRequest request) {
@@ -34,10 +39,11 @@ public class UserController {
 	}
 
 	@PostMapping("/login")
-	public ResponseEntity<User> login(@Valid @RequestBody LoginRequest request) {
+	public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
 		User loginUser = userService.loginUser(request.getEmail(), request.getPassword());
+		String token = jwtUtils.generateToken(loginUser.getId(), loginUser.getEmail());
 		
-		return ResponseEntity.ok(loginUser);
+		return ResponseEntity.ok(new AuthResponse(token, loginUser));
 	}
 
 	@GetMapping("/{id}")
