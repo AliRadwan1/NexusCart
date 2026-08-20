@@ -45,3 +45,4 @@ Thumbs.db
 *.env
 application-local.yml
 application-local.properties
+/.metadata/
