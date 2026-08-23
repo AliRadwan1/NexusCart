@@ -78,20 +78,39 @@ public class OrderService {
 		}
 		
 		// 3. Deduct stock for each item via Feign client
-		for (CartItem item : cart.getItems()) {
-			inventoryClient.deductStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
-		}
+		List<CartItem> deductedItems = new ArrayList<>();
+	    try {
+	        for (CartItem item : cart.getItems()) {
+	            inventoryClient.deductStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
+	            deductedItems.add(item); // Track successfully deducted items
+	        }
+	    } 
+	    catch (Exception e) {
+	        // Rollback stock for items deducted prior to failure
+	        for (CartItem item : deductedItems) {
+	            inventoryClient.createAddStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
+	        }
+	        throw new IllegalStateException("Inventory deduction failed: " + e.getMessage(), e);
+	    }
 		
 		// 4. Deduct payment from user wallet via Feign client
-		walletClient.withdraw(new WalletTransactionRequest(request.getUserId(), grandTotal));
+	    try {
+	        walletClient.withdraw(new WalletTransactionRequest(request.getUserId(), grandTotal));         
+	    } 
+	    catch (Exception e) {
+	        // Payment failed -> Revert ALL deducted stock and abort checkout
+	        for (CartItem item : cart.getItems()) {
+	            inventoryClient.createAddStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
+	        }
+	        throw new IllegalStateException("Payment failed: " + e.getMessage(), e);
+	    }
 		
 		// 5. Create Order entity
-		Order order = new Order(request.getUserId(), OrderStatus.COMPLETED, grandTotal);
-		
-		for (CartItem item: cart.getItems()) {
-			OrderItem orderItem = new OrderItem(order, item.getProductId(), item.getQuantity());
-			order.addOrderItem(orderItem);
-		}
+	    Order order = new Order(request.getUserId(), OrderStatus.COMPLETED, grandTotal);
+	    for (CartItem item : cart.getItems()) {
+	        OrderItem orderItem = new OrderItem(order, item.getProductId(), item.getQuantity());
+	        order.addOrderItem(orderItem);
+	    }
 		
 		Order savedOrder = orderRepository.save(order);
 		

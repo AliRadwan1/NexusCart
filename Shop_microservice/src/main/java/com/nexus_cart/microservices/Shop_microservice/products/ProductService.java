@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.nexus_cart.microservices.Shop_microservice.clients.InventoryClient;
+import com.nexus_cart.microservices.Shop_microservice.dto.InventoryRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.ProductRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.ProductResponse;
 import com.nexus_cart.microservices.Shop_microservice.exceptions.ProductAlreadyExistsException;
@@ -20,6 +22,9 @@ public class ProductService {
 
 	@Autowired
 	private ProductRepository productRepository;
+	
+	@Autowired
+	private InventoryClient inventoryClient;
 
 	/**
 	 * Creates a new product in the store catalog after verifying name uniqueness.
@@ -36,7 +41,11 @@ public class ProductService {
 		}
 
 		Product product = new Product(request.getName(), request.getCategory(), request.getPrice());
-		productRepository.save(product);
+		Product savedProduct = productRepository.save(product);
+		
+		int stockToRegister = (request.getInitialStock() > 0) ? request.getInitialStock() : 1;
+
+		inventoryClient.createAddStock(new InventoryRequest(savedProduct.getId(), stockToRegister));
 
 		return new ProductResponse(product.getId(), product.getName(), product.getCategory(), product.getPrice());
 	}

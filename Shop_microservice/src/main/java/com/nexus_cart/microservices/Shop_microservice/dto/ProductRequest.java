@@ -2,6 +2,7 @@ package com.nexus_cart.microservices.Shop_microservice.dto;
 
 import java.math.BigDecimal;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -19,6 +20,8 @@ public class ProductRequest {
 	@NotNull
 	@Positive
 	private BigDecimal price;
+	
+	private int initialStock;
 
 	public ProductRequest() {
 		super();
@@ -83,6 +86,20 @@ public class ProductRequest {
 	 */
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	/**
+	 * @return the initialStock
+	 */
+	public int getInitialStock() {
+		return initialStock;
+	}
+
+	/**
+	 * @param initialStock the initialStock to set
+	 */
+	public void setInitialStock(int initialStock) {
+		this.initialStock = initialStock;
 	}
 
 }

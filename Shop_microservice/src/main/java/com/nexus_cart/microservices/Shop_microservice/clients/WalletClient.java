@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import com.nexus_cart.microservices.Shop_microservice.dto.WalletTransactionRequest;
 
-@FeignClient(name = "wallet_service", url = "http://localhost:8081")
+@FeignClient(name = "wallet-service", url = "http://localhost:8081")
 public interface WalletClient {
 	@PostMapping("/wallets/withdraw")
 	Object withdraw(@RequestBody WalletTransactionRequest request);
