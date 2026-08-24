@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.nexus_cart.microservices.walet_microservice.dto.WalletTransactionResponse;
 import com.nexus_cart.microservices.walet_microservice.exceptions.InsufficientBalanceException;
 import com.nexus_cart.microservices.walet_microservice.exceptions.InvalidAmountException;
 import com.nexus_cart.microservices.walet_microservice.exceptions.WalletAlreadyExistsException;
@@ -15,15 +16,26 @@ import com.nexus_cart.microservices.walet_microservice.transactions.Transaction;
 import com.nexus_cart.microservices.walet_microservice.transactions.TransactionRepository;
 import com.nexus_cart.microservices.walet_microservice.transactions.TransactionType;
 
+/**
+ * Service class responsible for wallet domain logic, including account creation,
+ * balance queries, deposits, withdrawals, and peer-to-peer transfers.
+ */
 @Service
 public class WalletService {
+
 	@Autowired
 	private WalletRepository walletRepository;
 
 	@Autowired
 	private TransactionRepository transactionRepository;
 
-	// Create Wallet
+	/**
+	 * Creates a new wallet initialized with a zero balance for a specified user.
+	 *
+	 * @param userId Unique identifier of the user account.
+	 * @return The created {@link Wallet} entity.
+	 * @throws WalletAlreadyExistsException If a wallet already exists for the given user ID.
+	 */
 	public Wallet createWallet(String userId) {
 		Optional<Wallet> wallet = walletRepository.findByUserId(userId);
 
@@ -32,7 +44,6 @@ public class WalletService {
 		}
 
 		Wallet newWallet = new Wallet();
-
 		newWallet.setUserId(userId);
 		newWallet.setBalance(BigDecimal.ZERO);
 
@@ -41,17 +52,31 @@ public class WalletService {
 		return newWallet;
 	}
 
-	// Get Wallet By User ID
+	/**
+	 * Retrieves the active wallet entity associated with a user ID.
+	 *
+	 * @param userId Unique identifier of the user.
+	 * @return The {@link Wallet} entity.
+	 * @throws WalletNotFoundException If no wallet record matches the specified user ID.
+	 */
 	public Wallet getWalletByUserId(String userId) {
-		Wallet wallet = walletRepository.findByUserId(userId).orElseThrow(() -> new WalletNotFoundException(userId));
-
-		return wallet;
+		return walletRepository.findByUserId(userId)
+				.orElseThrow(() -> new WalletNotFoundException(userId));
 	}
 
-	// Deposit Funds
+	/**
+	 * Deposits funds into a user's wallet balance and records an audit log entry.
+	 *
+	 * @param userId Unique identifier of the user account.
+	 * @param amount Monetary value to credit.
+	 * @return A {@link WalletTransactionResponse} containing the generated transaction ID, wallet ID, amount, and new balance.
+	 * @throws WalletNotFoundException If the wallet is not found.
+	 * @throws InvalidAmountException If amount is null or less than or equal to zero.
+	 */
 	@Transactional
-	public Wallet deposit(String userId, BigDecimal amount) {
-		Wallet wallet = walletRepository.findByUserId(userId).orElseThrow(() -> new WalletNotFoundException(userId));
+	public WalletTransactionResponse deposit(String userId, BigDecimal amount) {
+		Wallet wallet = walletRepository.findByUserId(userId)
+				.orElseThrow(() -> new WalletNotFoundException(userId));
 
 		if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
 			throw new InvalidAmountException("Deposit amount must be greater than 0");
@@ -62,27 +87,37 @@ public class WalletService {
 
 		walletRepository.save(wallet);
 
-		// Record the transaction
 		Transaction transaction = new Transaction();
 		transaction.setWalletId(wallet.getId());
 		transaction.setType(TransactionType.DEPOSIT);
 		transaction.setAmount(amount);
-		transactionRepository.save(transaction);
+		Transaction savedTransaction = transactionRepository.save(transaction);
 
-		return wallet;
+		return new WalletTransactionResponse(savedTransaction.getId(), wallet.getId(), amount, newBalance);
 	}
 
-	// Withdraw Funds
+	/**
+	 * Deducts funds from a user's wallet, records a withdrawal transaction log, and
+	 * returns transaction details for external order processing.
+	 *
+	 * @param userId Unique identifier of the user account.
+	 * @param amount Monetary value to withdraw.
+	 * @return A {@link WalletTransactionResponse} containing the generated transaction ID, wallet ID, amount, and new balance.
+	 * @throws WalletNotFoundException If the wallet is not found.
+	 * @throws InvalidAmountException If amount is null or less than or equal to zero.
+	 * @throws InsufficientBalanceException If the requested amount exceeds current balance.
+	 */
 	@Transactional
-	public Wallet withdraw(String userId, BigDecimal amount) {
-		Wallet wallet = walletRepository.findByUserId(userId).orElseThrow(() -> new WalletNotFoundException(userId));
+	public WalletTransactionResponse withdraw(String userId, BigDecimal amount) {
+		Wallet wallet = walletRepository.findByUserId(userId)
+				.orElseThrow(() -> new WalletNotFoundException(userId));
 
 		if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
 			throw new InvalidAmountException("Withdrawal amount must be greater than 0");
 		}
 
 		if (amount.compareTo(wallet.getBalance()) > 0) {
-			throw new InsufficientBalanceException("Amount of withdrawl exceeded the balance");
+			throw new InsufficientBalanceException("Amount of withdrawal exceeded the balance");
 		}
 
 		BigDecimal newBalance = wallet.getBalance().subtract(amount);
@@ -90,16 +125,25 @@ public class WalletService {
 
 		walletRepository.save(wallet);
 
-		// Record the Transaction
 		Transaction transaction = new Transaction();
 		transaction.setWalletId(wallet.getId());
 		transaction.setType(TransactionType.WITHDRAWAL);
 		transaction.setAmount(amount);
-		transactionRepository.save(transaction);
+		Transaction savedTransaction = transactionRepository.save(transaction);
 
-		return wallet;
+		return new WalletTransactionResponse(savedTransaction.getId(), wallet.getId(), amount, newBalance);
 	}
 
+	/**
+	 * Transfers funds from one user wallet to another, creating inverse audit records for each party.
+	 *
+	 * @param senderUserId Unique identifier of the source user account.
+	 * @param receiverUserId Unique identifier of the destination user account.
+	 * @param amount Monetary value to transfer.
+	 * @throws WalletNotFoundException If either sender or receiver wallet does not exist.
+	 * @throws InvalidAmountException If sender matches receiver or if amount is less than or equal to zero.
+	 * @throws InsufficientBalanceException If sender balance is insufficient for the transaction amount.
+	 */
 	@Transactional
 	public void transfer(String senderUserId, String receiverUserId, BigDecimal amount) {
 		Wallet senderWallet = walletRepository.findByUserId(senderUserId)
@@ -112,7 +156,7 @@ public class WalletService {
 		}
 
 		if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-			throw new InvalidAmountException("transaction amount must be greater than 0");
+			throw new InvalidAmountException("Transaction amount must be greater than 0");
 		}
 
 		if (amount.compareTo(senderWallet.getBalance()) > 0) {
@@ -128,7 +172,6 @@ public class WalletService {
 		walletRepository.save(senderWallet);
 		walletRepository.save(receiverWallet);
 
-		// Record Transaction
 		Transaction send = new Transaction();
 		send.setWalletId(senderWallet.getId());
 		send.setType(TransactionType.TRANSFER_OUT);
@@ -140,6 +183,5 @@ public class WalletService {
 		recieve.setType(TransactionType.TRANSFER_IN);
 		recieve.setAmount(amount);
 		transactionRepository.save(recieve);
-
 	}
 }
