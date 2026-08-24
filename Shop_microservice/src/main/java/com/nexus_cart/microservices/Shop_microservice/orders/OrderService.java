@@ -20,8 +20,12 @@ import com.nexus_cart.microservices.Shop_microservice.dto.InventoryRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.OrderItemResponse;
 import com.nexus_cart.microservices.Shop_microservice.dto.OrderResponse;
 import com.nexus_cart.microservices.Shop_microservice.dto.WalletTransactionRequest;
+import com.nexus_cart.microservices.Shop_microservice.dto.WalletTransactionResponse;
 import com.nexus_cart.microservices.Shop_microservice.exceptions.OrderNotFoundException;
 import com.nexus_cart.microservices.Shop_microservice.exceptions.ProductNotFoundException;
+import com.nexus_cart.microservices.Shop_microservice.payments.Payment;
+import com.nexus_cart.microservices.Shop_microservice.payments.PaymentRepository;
+import com.nexus_cart.microservices.Shop_microservice.payments.PaymentStatus;
 import com.nexus_cart.microservices.Shop_microservice.products.Product;
 import com.nexus_cart.microservices.Shop_microservice.products.ProductRepository;
 
@@ -37,6 +41,9 @@ public class OrderService {
 	
 	@Autowired
 	private CartRepository cartRepository;
+	
+	@Autowired
+	private PaymentRepository paymentRepository;
 
 	@Autowired
 	private ProductRepository productRepository;
@@ -94,8 +101,9 @@ public class OrderService {
 	    }
 		
 		// 4. Deduct payment from user wallet via Feign client
+	    WalletTransactionResponse walletResponse;
 	    try {
-	        walletClient.withdraw(new WalletTransactionRequest(request.getUserId(), grandTotal));         
+	        walletResponse = walletClient.withdraw(new WalletTransactionRequest(request.getUserId(), grandTotal));         
 	    } 
 	    catch (Exception e) {
 	        // Payment failed -> Revert ALL deducted stock and abort checkout
@@ -111,9 +119,18 @@ public class OrderService {
 	        OrderItem orderItem = new OrderItem(order, item.getProductId(), item.getQuantity());
 	        order.addOrderItem(orderItem);
 	    }
+	    
+	    Order savedOrder = orderRepository.save(order);
+	    
+	    // 6. Save Payment entity linking orderId to transactionId
+	    Payment payment = new Payment(
+						    		order.getId(), 
+						    		walletResponse.getTransactionId(), 
+						    		PaymentStatus.SUCCESSFUL
+						    	);
+	    paymentRepository.save(payment);
 		
-		Order savedOrder = orderRepository.save(order);
-		
+		// 7. Update Cart status
 		cart.setStatus(CartStatus.CHECKED_OUT);
 		cartRepository.save(cart);
 		
