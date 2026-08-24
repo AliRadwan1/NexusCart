@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +38,8 @@ import com.nexus_cart.microservices.Shop_microservice.products.ProductRepository
  */
 @Service
 public class OrderService {
+	private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+	
 	@Autowired
 	private OrderRepository orderRepository;
 	
@@ -113,28 +117,55 @@ public class OrderService {
 	        throw new IllegalStateException("Payment failed: " + e.getMessage(), e);
 	    }
 		
-		// 5. Create Order entity
-	    Order order = new Order(request.getUserId(), OrderStatus.COMPLETED, grandTotal);
-	    for (CartItem item : cart.getItems()) {
-	        OrderItem orderItem = new OrderItem(order, item.getProductId(), item.getQuantity());
-	        order.addOrderItem(orderItem);
+	    // Save Order, Payment, and Cart entities with compensating rollback
+	    try {
+			// 5. Create Order entity
+		    Order order = new Order(request.getUserId(), OrderStatus.COMPLETED, grandTotal);
+		    for (CartItem item : cart.getItems()) {
+		        OrderItem orderItem = new OrderItem(order, item.getProductId(), item.getQuantity());
+		        order.addOrderItem(orderItem);
+		    }
+		    
+		    Order savedOrder = orderRepository.save(order);
+		    
+		    // 6. Save Payment entity linking orderId to transactionId
+		    Payment payment = new Payment(
+							    		savedOrder.getId(), 
+							    		walletResponse.getTransactionId(), 
+							    		PaymentStatus.SUCCESSFUL
+							    	);
+		    paymentRepository.save(payment);
+			
+			// 7. Update Cart status
+			cart.setStatus(CartStatus.CHECKED_OUT);
+			cartRepository.save(cart);
+			
+			return mapToOrderResponse(savedOrder);
 	    }
-	    
-	    Order savedOrder = orderRepository.save(order);
-	    
-	    // 6. Save Payment entity linking orderId to transactionId
-	    Payment payment = new Payment(
-						    		order.getId(), 
-						    		walletResponse.getTransactionId(), 
-						    		PaymentStatus.SUCCESSFUL
-						    	);
-	    paymentRepository.save(payment);
-		
-		// 7. Update Cart status
-		cart.setStatus(CartStatus.CHECKED_OUT);
-		cartRepository.save(cart);
-		
-		return mapToOrderResponse(savedOrder);
+	    catch(Exception e) {
+	    	// Step 5 Failure Compensation: Refund Wallet Funds
+			try {
+				walletClient.deposit(new WalletTransactionRequest(request.getUserId(), grandTotal));
+			} 
+			catch (Exception walletEx) {
+				// Log critical alert if wallet refund fails
+				logger.error("CRITICAL SAGA FAILURE: Failed to issue wallet refund of {} for userId {}. Manual intervention required!", 
+	                    grandTotal, request.getUserId(), walletEx);
+			}
+
+			// Step 5 Failure Compensation: Revert Inventory Deductions
+			for (CartItem item : cart.getItems()) {
+				try {
+					inventoryClient.createAddStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
+				} catch (Exception invEx) {
+					// Log critical alert if stock addition fails
+					logger.error("CRITICAL SAGA FAILURE: Failed to restore stock of {} units for productId {}. Manual intervention required!", 
+	                        item.getQuantity(), item.getProductId(), invEx);
+				}
+			}
+
+			throw new IllegalStateException("Order completion failed after payment: " + e.getMessage(), e);
+	    }
 	}
 	
 	/**
