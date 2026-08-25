@@ -1,11 +1,17 @@
 package com.nexus_cart.microservices.Shop_microservice.products;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 @Entity
@@ -15,11 +21,14 @@ public class Product {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private String id;
 
-//	@Column(name = "name")
 	private String name;
-//	@Column(name = "category")
 	private String category;
 	private BigDecimal price;
+
+	@ElementCollection
+	@CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+	@Column(name = "image_url")
+	private List<String> imageUrls = new ArrayList<>();
 
 	public Product() {
 		super();
@@ -29,12 +38,14 @@ public class Product {
 	 * @param name
 	 * @param category
 	 * @param price
+	 * @param imageUrls
 	 */
-	public Product(String name, String category, BigDecimal price) {
+	public Product(String name, String category, BigDecimal price, List<String> imageUrls) {
 		super();
 		this.name = name;
 		this.category = category;
 		this.price = price;
+		this.imageUrls = imageUrls;
 	}
 
 	/**
@@ -91,6 +102,20 @@ public class Product {
 	 */
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	/**
+	 * @return the imageUrls
+	 */
+	public List<String> getImageUrls() {
+		return imageUrls;
+	}
+
+	/**
+	 * @param imageUrls the imageUrls to set
+	 */
+	public void setImageUrls(List<String> imageUrls) {
+		this.imageUrls = imageUrls;
 	}
 
 }

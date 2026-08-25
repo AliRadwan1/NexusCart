@@ -1,8 +1,8 @@
 package com.nexus_cart.microservices.Shop_microservice.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -22,6 +22,7 @@ public class ProductRequest {
 	private BigDecimal price;
 	
 	private int initialStock;
+	private List<String> imageUrls;
 
 	public ProductRequest() {
 		super();
@@ -100,6 +101,20 @@ public class ProductRequest {
 	 */
 	public void setInitialStock(int initialStock) {
 		this.initialStock = initialStock;
+	}
+
+	/**
+	 * @return the imageUrls
+	 */
+	public List<String> getImageUrls() {
+		return imageUrls;
+	}
+
+	/**
+	 * @param imageUrls the imageUrls to set
+	 */
+	public void setImageUrls(List<String> imageUrls) {
+		this.imageUrls = imageUrls;
 	}
 
 }

@@ -1,12 +1,15 @@
 package com.nexus_cart.microservices.Shop_microservice.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class ProductResponse {
 	private String id;
 	private String name;
 	private String category;
 	private BigDecimal price;
+
+	private List<String> imageUrls;
 
 	public ProductResponse() {
 		super();
@@ -17,13 +20,15 @@ public class ProductResponse {
 	 * @param name
 	 * @param category
 	 * @param price
+	 * @param imageUrls
 	 */
-	public ProductResponse(String id, String name, String category, BigDecimal price) {
+	public ProductResponse(String id, String name, String category, BigDecimal price, List<String> imageUrls) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.category = category;
 		this.price = price;
+		this.imageUrls = imageUrls;
 	}
 
 	/**
@@ -80,6 +85,20 @@ public class ProductResponse {
 	 */
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	/**
+	 * @return the imageUrls
+	 */
+	public List<String> getImageUrls() {
+		return imageUrls;
+	}
+
+	/**
+	 * @param imageUrls the imageUrls to set
+	 */
+	public void setImageUrls(List<String> imageUrls) {
+		this.imageUrls = imageUrls;
 	}
 
 }
