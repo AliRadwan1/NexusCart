@@ -40,14 +40,13 @@ public class ProductService {
 			throw new ProductAlreadyExistsException("Product with name '" + request.getName() + "' already exists");
 		}
 
-		Product product = new Product(request.getName(), request.getCategory(), request.getPrice());
+		Product product = new Product(request.getName(), request.getCategory(), request.getPrice(), request.getImageUrls());
 		Product savedProduct = productRepository.save(product);
 		
 		int stockToRegister = (request.getInitialStock() > 0) ? request.getInitialStock() : 1;
-
 		inventoryClient.createAddStock(new InventoryRequest(savedProduct.getId(), stockToRegister));
 
-		return new ProductResponse(product.getId(), product.getName(), product.getCategory(), product.getPrice());
+		return new ProductResponse(savedProduct.getId(), savedProduct.getName(), savedProduct.getCategory(), savedProduct.getPrice(), savedProduct.getImageUrls());
 	}
 
 	/**
@@ -56,8 +55,9 @@ public class ProductService {
 	 * @return A list of all products mapped to {@link ProductResponse} objects.
 	 */
 	public List<ProductResponse> getAllProducts() {
-		return productRepository.findAll().stream().map(product -> new ProductResponse(product.getId(),
-				product.getName(), product.getCategory(), product.getPrice())).collect(Collectors.toList());
+		return productRepository.findAll().stream()
+				.map(product -> new ProductResponse(product.getId(), product.getName(), product.getCategory(), product.getPrice(), product.getImageUrls()))
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -74,8 +74,9 @@ public class ProductService {
 			throw new ProductNotFoundException("No products with name '" + name + "' exist");
 		}
 
-		return products.stream().map(product -> new ProductResponse(product.getId(), product.getName(),
-				product.getCategory(), product.getPrice())).collect(Collectors.toList());
+		return products.stream()
+				.map(product -> new ProductResponse(product.getId(), product.getName(), product.getCategory(), product.getPrice(), product.getImageUrls()))
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -93,8 +94,9 @@ public class ProductService {
 			throw new ProductNotFoundException("No products exist in category '" + category + "'");
 		}
 
-		return products.stream().map(product -> new ProductResponse(product.getId(), product.getName(),
-				product.getCategory(), product.getPrice())).collect(Collectors.toList());
+		return products.stream()
+				.map(product -> new ProductResponse(product.getId(), product.getName(), product.getCategory(), product.getPrice(), product.getImageUrls()))
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -108,6 +110,6 @@ public class ProductService {
 		Product product = productRepository.findById(id)
 				.orElseThrow(() -> new ProductNotFoundException("Product with id '" + id + "' doesn't exist"));
 
-		return new ProductResponse(product.getId(), product.getName(), product.getCategory(), product.getPrice());
+		return new ProductResponse(product.getId(), product.getName(), product.getCategory(), product.getPrice(), product.getImageUrls());
 	}
 }
