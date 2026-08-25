@@ -11,12 +11,17 @@ public class GatewayConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                .route("wallet_service", r -> r.path("/api/wallets/**")
-                        .uri("lb://wallet_microservice"))
+                // Wallet Service routes
+                .route("wallet_service", r -> r.path("/users/**", "/wallets/**", "/transactions/**")
+                        .uri("lb://wallet-microservice"))
+
+                // Shop Service routes
+                .route("shop_service", r -> r.path("/api/products/**", "/api/cart/**", "/api/orders/**")
+                        .uri("lb://shop-microservice"))
+
+                // Inventory Service routes
                 .route("inventory_service", r -> r.path("/api/inventory/**")
-                        .uri("lb://inventory_microservice"))
-                .route("shop_service", r -> r.path("/api/products/**")
-                        .uri("lb://Shop_microservice"))
+                        .uri("lb://inventory-microservice"))
                 .build();
     }
 }
