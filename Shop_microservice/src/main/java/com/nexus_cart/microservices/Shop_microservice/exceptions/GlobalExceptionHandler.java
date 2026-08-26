@@ -1,6 +1,8 @@
 package com.nexus_cart.microservices.Shop_microservice.exceptions;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -62,5 +64,16 @@ public class GlobalExceptionHandler {
 				"Internal Server Error", ex.getMessage(), request.getRequestURI());
 
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+	}
+	
+	@ExceptionHandler(ServiceUnavailableException.class)
+	public ResponseEntity<Map<String, Object>> handleServiceUnavailable(ServiceUnavailableException ex) {
+	    Map<String, Object> response = new HashMap<>();
+	    response.put("timestamp", LocalDateTime.now());
+	    response.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
+	    response.put("error", "Service Unavailable");
+	    response.put("message", ex.getMessage());
+
+	    return new ResponseEntity<>(response, HttpStatus.SERVICE_UNAVAILABLE);
 	}
 }

@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +26,14 @@ import com.nexus_cart.microservices.Shop_microservice.dto.WalletTransactionReque
 import com.nexus_cart.microservices.Shop_microservice.dto.WalletTransactionResponse;
 import com.nexus_cart.microservices.Shop_microservice.exceptions.OrderNotFoundException;
 import com.nexus_cart.microservices.Shop_microservice.exceptions.ProductNotFoundException;
+import com.nexus_cart.microservices.Shop_microservice.exceptions.ServiceUnavailableException;
 import com.nexus_cart.microservices.Shop_microservice.payments.Payment;
 import com.nexus_cart.microservices.Shop_microservice.payments.PaymentRepository;
 import com.nexus_cart.microservices.Shop_microservice.payments.PaymentStatus;
 import com.nexus_cart.microservices.Shop_microservice.products.Product;
 import com.nexus_cart.microservices.Shop_microservice.products.ProductRepository;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 
 /**
@@ -57,6 +61,11 @@ public class OrderService {
 
 	@Autowired
 	private WalletClient walletClient;
+	
+	// Self-injection via @Lazy ensures Spring AOP intercepts @CircuitBreaker calls
+    @Autowired
+    @Lazy
+    private OrderService self;
 
 	/**
 	 * Orchestrates the checkout process for an active user cart:
@@ -167,6 +176,45 @@ public class OrderService {
 			throw new IllegalStateException("Order completion failed after payment: " + e.getMessage(), e);
 	    }
 	}
+	
+	// Resilience4j Protected Wrapper Method
+	
+	@CircuitBreaker(name = "inventoryService", fallbackMethod = "inventoryFallback")
+    public void deductStockWithCircuitBreaker(InventoryRequest request) {
+        inventoryClient.deductStock(request);
+    }
+	
+	@CircuitBreaker(name = "inventoryService", fallbackMethod = "inventoryFallback")
+    public void addStockWithCircuitBreaker(InventoryRequest request) {
+        inventoryClient.createAddStock(request);
+    }
+
+    @CircuitBreaker(name = "walletService", fallbackMethod = "walletWithdrawFallback")
+    public WalletTransactionResponse withdrawWithCircuitBreaker(WalletTransactionRequest request) {
+        return walletClient.withdraw(request);
+    }
+
+    @CircuitBreaker(name = "walletService", fallbackMethod = "walletDepositFallback")
+    public WalletTransactionResponse depositWithCircuitBreaker(WalletTransactionRequest request) {
+        return walletClient.deposit(request);
+    }
+	
+    // Circuit Breaker Fallback Handlers
+
+    public void inventoryFallback(InventoryRequest request, Throwable t) {
+        logger.error("Inventory Service circuit breaker triggered: {}", t.getMessage());
+        throw new ServiceUnavailableException("Inventory service is temporarily unavailable. Please try again shortly.");
+    }
+
+    public WalletTransactionResponse walletWithdrawFallback(WalletTransactionRequest request, Throwable t) {
+        logger.error("Wallet Service withdraw circuit breaker triggered: {}", t.getMessage());
+        throw new ServiceUnavailableException("Wallet service is temporarily unavailable. Please try again shortly.");
+    }
+
+    public WalletTransactionResponse walletDepositFallback(WalletTransactionRequest request, Throwable t) {
+        logger.error("Wallet Service deposit circuit breaker triggered: {}", t.getMessage());
+        throw new ServiceUnavailableException("Wallet service is temporarily unavailable for refund processing.");
+    }
 	
 	/**
 	 * Retrieves all past orders placed by a specific user.
