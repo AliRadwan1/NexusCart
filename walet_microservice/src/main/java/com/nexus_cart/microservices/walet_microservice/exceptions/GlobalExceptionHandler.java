@@ -48,6 +48,13 @@ public class GlobalExceptionHandler {
 
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
 	}
+	
+	@ExceptionHandler(InvalidNewPasswordException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidNewPassword(InvalidNewPasswordException ex) {
+		ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Unauthorized", ex.getMessage());
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+	}
 
 	// ----------------------------------------------------
 	// Wallet Exceptions

@@ -8,13 +8,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nexus_cart.microservices.walet_microservice.dto.AuthResponse;
+import com.nexus_cart.microservices.walet_microservice.dto.ChangePasswordRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.LoginRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.RegisterRequest;
+import com.nexus_cart.microservices.walet_microservice.dto.UpdateUserInfoRequest;
 import com.nexus_cart.microservices.walet_microservice.security.JwtUtils;
 import com.nexus_cart.microservices.walet_microservice.users.User;
 import com.nexus_cart.microservices.walet_microservice.users.UserService;
@@ -32,8 +35,7 @@ public class UserController {
 
 	@PostMapping("/register")
 	public ResponseEntity<Map<String, String>> registerUser(@Valid @RequestBody RegisterRequest request) {
-		userService.registerUser(request.getFirstName(), request.getLastName(), request.getEmail(),
-				request.getPassword());
+		userService.registerUser(request);
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message","User registered successfully"));
 	}
@@ -44,6 +46,20 @@ public class UserController {
 		String token = jwtUtils.generateToken(loginUser.getId(), loginUser.getEmail());
 		
 		return ResponseEntity.ok(new AuthResponse(token, loginUser));
+	}
+	
+	@PutMapping("/editInfo")
+	public ResponseEntity<Map<String, String>> editInfo(@Valid @RequestBody UpdateUserInfoRequest request){
+		userService.editUserInfo(request);
+		
+		return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "User info has been updated successfully"));
+	}
+	
+	@PutMapping("/changePassword")
+	public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request){
+		userService.changePassword(request);
+		
+		return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Password changed successfully"));
 	}
 
 	@GetMapping("/{id}")
