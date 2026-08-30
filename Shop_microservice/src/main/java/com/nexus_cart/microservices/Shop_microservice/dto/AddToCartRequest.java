@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 public class AddToCartRequest {
 
-	@NotBlank
 	private String userId;
 
 	@NotBlank
@@ -15,18 +14,6 @@ public class AddToCartRequest {
 	@NotNull
 	@Min(1)
 	private int quantity;
-
-	/**
-	 * @param userId
-	 * @param productId
-	 * @param quantity
-	 */
-	public AddToCartRequest(@NotBlank String userId, @NotBlank String productId, @NotNull @Min(1) int quantity) {
-		super();
-		this.userId = userId;
-		this.productId = productId;
-		this.quantity = quantity;
-	}
 
 	/**
 	 * @return the userId

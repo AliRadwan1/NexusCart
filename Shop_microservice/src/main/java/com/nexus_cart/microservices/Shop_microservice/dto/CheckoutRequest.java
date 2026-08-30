@@ -1,18 +1,7 @@
 package com.nexus_cart.microservices.Shop_microservice.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 public class CheckoutRequest {
-	@NotBlank
 	private String userId;
-
-	/**
-	 * @param userId
-	 */
-	public CheckoutRequest(@NotBlank String userId) {
-		super();
-		this.userId = userId;
-	}
 
 	/**
 	 * @return the userId

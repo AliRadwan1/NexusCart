@@ -1,12 +1,11 @@
 package com.nexus_cart.microservices.Shop_microservice.exceptions;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -34,6 +33,15 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
 	}
 
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex,
+			HttpServletRequest request) {
+		ErrorResponse error = new ErrorResponse(LocalDateTime.now(), HttpStatus.FORBIDDEN.value(), "Access Denied",
+				ex.getMessage(), request.getRequestURI());
+
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex,
 			HttpServletRequest request) {
@@ -58,22 +66,20 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(status).body(error);
 	}
 
+	@ExceptionHandler(ServiceUnavailableException.class)
+	public ResponseEntity<ErrorResponse> handleServiceUnavailable(ServiceUnavailableException ex,
+			HttpServletRequest request) {
+		ErrorResponse error = new ErrorResponse(LocalDateTime.now(), HttpStatus.SERVICE_UNAVAILABLE.value(),
+				"Service Unavailable", ex.getMessage(), request.getRequestURI());
+
+		return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex, HttpServletRequest request) {
 		ErrorResponse error = new ErrorResponse(LocalDateTime.now(), HttpStatus.INTERNAL_SERVER_ERROR.value(),
 				"Internal Server Error", ex.getMessage(), request.getRequestURI());
 
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-	}
-	
-	@ExceptionHandler(ServiceUnavailableException.class)
-	public ResponseEntity<Map<String, Object>> handleServiceUnavailable(ServiceUnavailableException ex) {
-	    Map<String, Object> response = new HashMap<>();
-	    response.put("timestamp", LocalDateTime.now());
-	    response.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
-	    response.put("error", "Service Unavailable");
-	    response.put("message", ex.getMessage());
-
-	    return new ResponseEntity<>(response, HttpStatus.SERVICE_UNAVAILABLE);
 	}
 }

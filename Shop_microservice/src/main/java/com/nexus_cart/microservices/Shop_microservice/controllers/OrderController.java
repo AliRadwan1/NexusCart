@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +30,13 @@ public class OrderController {
 
 	@Autowired
 	private OrderService orderService;
+	
+	/**
+	 * Helper method to retrieve userId from JWT SecurityContext.
+	 */
+	private String getAuthenticatedUserId(Authentication authentication) {
+		return (String) authentication.getPrincipal();
+	}
 
 	/**
 	 * Processes the checkout workflow for a user's active shopping cart,
@@ -38,9 +46,12 @@ public class OrderController {
 	 * @return {@link ResponseEntity} containing the created {@link OrderResponse} and HTTP status 201 CREATED.
 	 */
 	@PostMapping("/checkout")
-	public ResponseEntity<OrderResponse> checkout(@Valid @RequestBody CheckoutRequest request) {
-		OrderResponse response = orderService.checkOut(request);
+	public ResponseEntity<OrderResponse> checkout(Authentication authentication, 
+			@Valid @RequestBody CheckoutRequest request) {
+		String userId = getAuthenticatedUserId(authentication);
+		request.setUserId(userId);
 		
+		OrderResponse response = orderService.checkOut(request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
@@ -50,8 +61,9 @@ public class OrderController {
 	 * @param userId Unique identifier of the target user.
 	 * @return {@link ResponseEntity} containing a list of {@link OrderResponse} objects and HTTP status 200 OK.
 	 */
-	@GetMapping("/user/{userId}")
-	public ResponseEntity<List<OrderResponse>> retrieveUserOrders(@PathVariable String userId) {
+	@GetMapping
+	public ResponseEntity<List<OrderResponse>> retrieveUserOrders(Authentication authentication) {
+		String userId = getAuthenticatedUserId(authentication);
 		List<OrderResponse> response = orderService.getOrdersByUserId(userId);
 		
 		return ResponseEntity.status(HttpStatus.OK).body(response);
@@ -64,8 +76,10 @@ public class OrderController {
 	 * @return {@link ResponseEntity} containing the matching {@link OrderResponse} and HTTP status 200 OK.
 	 */
 	@GetMapping("/{orderId}")
-	public ResponseEntity<OrderResponse> retrieveOrderById(@PathVariable String orderId) {
-		OrderResponse response = orderService.getOrderById(orderId);
+	public ResponseEntity<OrderResponse> retrieveOrderById(Authentication authentication, 
+			@PathVariable String orderId) {
+		String userId = getAuthenticatedUserId(authentication);
+		OrderResponse response = orderService.getOrderById(orderId, userId);
 		
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
@@ -77,8 +91,10 @@ public class OrderController {
 	 * @return {@link ResponseEntity} containing the updated {@link OrderResponse} with status CANCELLED and HTTP status 200 OK.
 	 */
 	@PutMapping("/{orderId}/cancel")
-	public ResponseEntity<OrderResponse> cancelOrder(@PathVariable String orderId) {
-		OrderResponse response = orderService.cancelOrderById(orderId);
+	public ResponseEntity<OrderResponse> cancelOrder(Authentication authentication, 
+			@PathVariable String orderId) {
+		String userId = getAuthenticatedUserId(authentication);
+		OrderResponse response = orderService.cancelOrderById(orderId, userId);
 		
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
