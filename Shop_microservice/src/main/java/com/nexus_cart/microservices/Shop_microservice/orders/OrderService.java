@@ -101,14 +101,18 @@ public class OrderService {
 		List<CartItem> deductedItems = new ArrayList<>();
 	    try {
 	        for (CartItem item : cart.getItems()) {
-	            inventoryClient.deductStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
+	        	self.deductStockWithCircuitBreaker(new InventoryRequest(item.getProductId(), item.getQuantity()));
 	            deductedItems.add(item); // Track successfully deducted items
 	        }
 	    } 
 	    catch (Exception e) {
 	        // Rollback stock for items deducted prior to failure
 	        for (CartItem item : deductedItems) {
-	            inventoryClient.createAddStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
+	            try {
+	                self.addStockWithCircuitBreaker(new InventoryRequest(item.getProductId(), item.getQuantity()));
+	            } catch (Exception invEx) {
+	                logger.error("CRITICAL ROLLBACK FAILURE: Failed to restore stock during checkout abort for productId: {}", item.getProductId(), invEx);
+	            }
 	        }
 	        throw new IllegalStateException("Inventory deduction failed: " + e.getMessage(), e);
 	    }
@@ -116,12 +120,16 @@ public class OrderService {
 		// 4. Deduct payment from user wallet via Feign client
 	    WalletTransactionResponse walletResponse;
 	    try {
-	        walletResponse = walletClient.withdraw(new WalletTransactionRequest(request.getUserId(), grandTotal));         
+	        walletResponse = self.withdrawWithCircuitBreaker(new WalletTransactionRequest(request.getUserId(), grandTotal));         
 	    } 
 	    catch (Exception e) {
-	        // Payment failed -> Revert ALL deducted stock and abort checkout
+	    	// Payment failed -> Revert ALL deducted stock and abort checkout
 	        for (CartItem item : cart.getItems()) {
-	            inventoryClient.createAddStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
+	            try {
+	                self.addStockWithCircuitBreaker(new InventoryRequest(item.getProductId(), item.getQuantity()));
+	            } catch (Exception invEx) {
+	                logger.error("CRITICAL ROLLBACK FAILURE: Failed to restore stock after payment failure for productId: {}", item.getProductId(), invEx);
+	            }
 	        }
 	        throw new IllegalStateException("Payment failed: " + e.getMessage(), e);
 	    }
@@ -154,7 +162,7 @@ public class OrderService {
 	    catch(Exception e) {
 	    	// Step 5 Failure Compensation: Refund Wallet Funds
 			try {
-				walletClient.deposit(new WalletTransactionRequest(request.getUserId(), grandTotal));
+				self.depositWithCircuitBreaker(new WalletTransactionRequest(request.getUserId(), grandTotal));
 			} 
 			catch (Exception walletEx) {
 				// Log critical alert if wallet refund fails
@@ -165,7 +173,7 @@ public class OrderService {
 			// Step 5 Failure Compensation: Revert Inventory Deductions
 			for (CartItem item : cart.getItems()) {
 				try {
-					inventoryClient.createAddStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
+					self.addStockWithCircuitBreaker(new InventoryRequest(item.getProductId(), item.getQuantity()));
 				} catch (Exception invEx) {
 					// Log critical alert if stock addition fails
 					logger.error("CRITICAL SAGA FAILURE: Failed to restore stock of {} units for productId {}. Manual intervention required!", 
@@ -176,45 +184,6 @@ public class OrderService {
 			throw new IllegalStateException("Order completion failed after payment: " + e.getMessage(), e);
 	    }
 	}
-	
-	// Resilience4j Protected Wrapper Method
-	
-	@CircuitBreaker(name = "inventoryService", fallbackMethod = "inventoryFallback")
-    public void deductStockWithCircuitBreaker(InventoryRequest request) {
-        inventoryClient.deductStock(request);
-    }
-	
-	@CircuitBreaker(name = "inventoryService", fallbackMethod = "inventoryFallback")
-    public void addStockWithCircuitBreaker(InventoryRequest request) {
-        inventoryClient.createAddStock(request);
-    }
-
-    @CircuitBreaker(name = "walletService", fallbackMethod = "walletWithdrawFallback")
-    public WalletTransactionResponse withdrawWithCircuitBreaker(WalletTransactionRequest request) {
-        return walletClient.withdraw(request);
-    }
-
-    @CircuitBreaker(name = "walletService", fallbackMethod = "walletDepositFallback")
-    public WalletTransactionResponse depositWithCircuitBreaker(WalletTransactionRequest request) {
-        return walletClient.deposit(request);
-    }
-	
-    // Circuit Breaker Fallback Handlers
-
-    public void inventoryFallback(InventoryRequest request, Throwable t) {
-        logger.error("Inventory Service circuit breaker triggered: {}", t.getMessage());
-        throw new ServiceUnavailableException("Inventory service is temporarily unavailable. Please try again shortly.");
-    }
-
-    public WalletTransactionResponse walletWithdrawFallback(WalletTransactionRequest request, Throwable t) {
-        logger.error("Wallet Service withdraw circuit breaker triggered: {}", t.getMessage());
-        throw new ServiceUnavailableException("Wallet service is temporarily unavailable. Please try again shortly.");
-    }
-
-    public WalletTransactionResponse walletDepositFallback(WalletTransactionRequest request, Throwable t) {
-        logger.error("Wallet Service deposit circuit breaker triggered: {}", t.getMessage());
-        throw new ServiceUnavailableException("Wallet service is temporarily unavailable for refund processing.");
-    }
 	
 	/**
 	 * Retrieves all past orders placed by a specific user.
@@ -236,40 +205,120 @@ public class OrderService {
 	 * @return The {@link OrderResponse} payload[cite: 3].
 	 */
 	@Transactional(readOnly = true)
-	public OrderResponse getOrderById(String orderId) {
+	public OrderResponse getOrderById(String orderId, String userId) {
 		Order order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException("No order found with id: " + orderId));
+		
+		if (!order.getUserId().equals(userId)) {
+			throw new IllegalStateException("Access denied: You do not own order " + orderId);
+		}
 		
 		return mapToOrderResponse(order);
 	}
 	
 	/**
-	 * Cancels a sepcific order by its ID
+	 * Cancels a specific order by its ID after validating user ownership.
+	 * Triggers compensating transactions to restock inventory and refund wallet balance.
 	 * 
 	 * @param orderId Unique identifier of the order.
-	 * @return The {@link OrderResponse} payload[cite: 3].
+	 * @param userId  Unique identifier of the authenticated user.
+	 * @return The updated {@link OrderResponse} payload[cite: 3].
 	 */
 	@Transactional
-	public OrderResponse cancelOrderById(String orderId) {
+	public OrderResponse cancelOrderById(String orderId, String userId) {
 		Order order = orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException("No order found with id: " + orderId));
+		
+		if (!order.getUserId().equals(userId)) {
+			throw new IllegalStateException("Access denied: You do not own order " + orderId);
+		}
 		
 		if (order.getStatus() == OrderStatus.CANCELLED) {
 		    throw new IllegalStateException("Order " + orderId + " has already been cancelled.");
 		}
 		
-		order.setStatus(OrderStatus.CANCELLED);
+		boolean stockRestored = true;
+	    boolean refundIssued = true;
 		
+		// 1. Compensate Inventory (Restock)
 		for(OrderItem item: order.getItems()) {
-			inventoryClient.createAddStock(new InventoryRequest(item.getProductId(), item.getQuantity()));
+			try {
+				self.addStockWithCircuitBreaker(new InventoryRequest(item.getProductId(), item.getQuantity()));
+			} catch (Exception invEx) {
+				stockRestored = false;
+				// Log critical alert if stock addition fails
+				logger.error("CRITICAL SAGA FAILURE: Failed to restore stock of {} units for productId {}. Manual intervention required!", 
+                        item.getQuantity(), item.getProductId(), invEx);
+			}
 		}
 		
-		walletClient.deposit(new WalletTransactionRequest(order.getUserId(), order.getTotal()));
+		// 2. Compensate Wallet (Refund Total)
+		try {
+			self.depositWithCircuitBreaker(new WalletTransactionRequest(order.getUserId(), order.getTotal()));
+		} 
+		catch (Exception walletEx) {
+			refundIssued = false;
+			// Log critical alert if wallet refund fails
+			logger.error("CRITICAL SAGA FAILURE: Failed to issue wallet refund of {} for userId {}. Manual intervention required!", 
+                    order.getTotal(), order.getUserId(), walletEx);
+		}
 		
+		// 3. Verify Compensation Integrity Before State Mutation
+	    if (!stockRestored || !refundIssued) {
+	        throw new IllegalStateException(String.format(
+	            "Order cancellation incomplete for orderId %s. Stock Restored: %b, Wallet Refunded: %b. Transaction aborted.",
+	            orderId, stockRestored, refundIssued
+	        ));
+	    }
+		
+		order.setStatus(OrderStatus.CANCELLED);
 		Order savedOrder = orderRepository.save(order);
 		
 		return mapToOrderResponse(savedOrder);
 	}
+	
+	// -----------------------------------------
+	// Resilience4j Protected Wrapper Method
+	// -----------------------------------------
+	
+	@CircuitBreaker(name = "inventoryService", fallbackMethod = "inventoryFallback")
+    public void deductStockWithCircuitBreaker(InventoryRequest request) {
+        inventoryClient.deductStock(request);
+    }
+	
+	@CircuitBreaker(name = "inventoryService", fallbackMethod = "inventoryFallback")
+    public void addStockWithCircuitBreaker(InventoryRequest request) {
+        inventoryClient.createAddStock(request);
+    }
+
+    @CircuitBreaker(name = "walletService", fallbackMethod = "walletWithdrawFallback")
+    public WalletTransactionResponse withdrawWithCircuitBreaker(WalletTransactionRequest request) {
+        return walletClient.withdraw(request);
+    }
+
+    @CircuitBreaker(name = "walletService", fallbackMethod = "walletDepositFallback")
+    public WalletTransactionResponse depositWithCircuitBreaker(WalletTransactionRequest request) {
+        return walletClient.deposit(request);
+    }
+	
+    // -----------------------------------------
+    // Circuit Breaker Fallback Handlers
+    // -----------------------------------------
+
+    public void inventoryFallback(InventoryRequest request, Throwable t) {
+        logger.error("Inventory Service circuit breaker triggered: {}", t.getMessage());
+        throw new ServiceUnavailableException("Inventory service is temporarily unavailable. Please try again shortly.");
+    }
+
+    public WalletTransactionResponse walletWithdrawFallback(WalletTransactionRequest request, Throwable t) {
+        logger.error("Wallet Service withdraw circuit breaker triggered: {}", t.getMessage());
+        throw new ServiceUnavailableException("Wallet service is temporarily unavailable. Please try again shortly.");
+    }
+
+    public WalletTransactionResponse walletDepositFallback(WalletTransactionRequest request, Throwable t) {
+        logger.error("Wallet Service deposit circuit breaker triggered: {}", t.getMessage());
+        throw new ServiceUnavailableException("Wallet service is temporarily unavailable for refund processing.");
+    }
 	
 	/**
 	 * Helper method mapping an Order entity into an OrderResponse DTO[cite: 3].
