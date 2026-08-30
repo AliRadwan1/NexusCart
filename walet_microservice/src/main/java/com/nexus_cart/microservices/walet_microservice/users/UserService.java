@@ -1,5 +1,6 @@
 package com.nexus_cart.microservices.walet_microservice.users;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,8 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nexus_cart.microservices.walet_microservice.dto.ChangePasswordRequest;
+import com.nexus_cart.microservices.walet_microservice.dto.DeleteAccountRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.RegisterRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.UpdateUserInfoRequest;
+import com.nexus_cart.microservices.walet_microservice.exceptions.InvalidArgumentException;
 import com.nexus_cart.microservices.walet_microservice.exceptions.InvalidNewPasswordException;
 import com.nexus_cart.microservices.walet_microservice.exceptions.UserAlreadyExistsException;
 import com.nexus_cart.microservices.walet_microservice.exceptions.UserAuthenticationException;
@@ -139,6 +142,28 @@ public class UserService {
 		user.setPassword(passwordEncoder.encode(request.getNewPassword()));
 
 		userRepository.save(user);
+	}
+	
+	@Transactional
+	public void deleteAccount(DeleteAccountRequest request) {
+
+		// 1. Fast plain-text validation: ensure confirmation password matches
+		if (!Objects.equals(request.getCurrentPassword(), request.getConfirmPassword())) {
+			throw new InvalidArgumentException("Confirmation password doesn't match");
+		}
+		
+		// 2. Fetch user entity
+		User user = userRepository.findById(request.getId())
+				.orElseThrow(() -> new UserNotFoundException("No User found with this id: " + request.getId()));
+
+		// 3. verify provided password against BCrypt hash in DB
+	    if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+	        throw new UserAuthenticationException("Current password is incorrect");
+	    }
+	    
+	    // 4. Cleanup user resources
+	    walletService.deleteWallet(user.getId());
+	    userRepository.deleteById(user.getId()); 
 	}
 
 	/**

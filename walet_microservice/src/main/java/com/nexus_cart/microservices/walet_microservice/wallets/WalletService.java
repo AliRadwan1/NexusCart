@@ -184,4 +184,13 @@ public class WalletService {
 		recieve.setAmount(amount);
 		transactionRepository.save(recieve);
 	}
+
+	/**
+	 * deletes the wallet of a certain user
+	 * 
+	 * @param userId
+	 */
+	public void deleteWallet(String userId) {
+		walletRepository.deleteByUserId(userId);
+	}
 }

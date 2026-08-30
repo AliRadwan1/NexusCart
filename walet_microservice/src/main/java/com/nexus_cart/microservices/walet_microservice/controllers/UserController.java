@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nexus_cart.microservices.walet_microservice.dto.AuthResponse;
 import com.nexus_cart.microservices.walet_microservice.dto.ChangePasswordRequest;
+import com.nexus_cart.microservices.walet_microservice.dto.DeleteAccountRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.LoginRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.RegisterRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.UpdateUserInfoRequest;
@@ -29,7 +30,7 @@ import jakarta.validation.Valid;
 public class UserController {
 	@Autowired
 	private UserService userService;
-	
+
 	@Autowired
 	private JwtUtils jwtUtils;
 
@@ -37,29 +38,36 @@ public class UserController {
 	public ResponseEntity<Map<String, String>> registerUser(@Valid @RequestBody RegisterRequest request) {
 		userService.registerUser(request);
 
-		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message","User registered successfully"));
+		return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "User registered successfully"));
 	}
 
 	@PostMapping("/login")
 	public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
 		User loginUser = userService.loginUser(request.getEmail(), request.getPassword());
 		String token = jwtUtils.generateToken(loginUser.getId(), loginUser.getEmail());
-		
+
 		return ResponseEntity.ok(new AuthResponse(token, loginUser));
 	}
-	
+
 	@PutMapping("/editInfo")
-	public ResponseEntity<Map<String, String>> editInfo(@Valid @RequestBody UpdateUserInfoRequest request){
+	public ResponseEntity<Map<String, String>> editInfo(@Valid @RequestBody UpdateUserInfoRequest request) {
 		userService.editUserInfo(request);
-		
+
 		return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "User info has been updated successfully"));
 	}
-	
+
 	@PutMapping("/changePassword")
-	public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request){
+	public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
 		userService.changePassword(request);
-		
+
 		return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Password changed successfully"));
+	}
+
+	@PostMapping("/delete")
+	public ResponseEntity<Map<String, String>> deleteAccount(@Valid @RequestBody DeleteAccountRequest request) {
+		userService.deleteAccount(request);
+
+		return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Account deleted successfully"));
 	}
 
 	@GetMapping("/{id}")

@@ -51,7 +51,14 @@ public class GlobalExceptionHandler {
 	
 	@ExceptionHandler(InvalidNewPasswordException.class)
 	public ResponseEntity<ErrorResponse> handleInvalidNewPassword(InvalidNewPasswordException ex) {
-		ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Unauthorized", ex.getMessage());
+		ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage());
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+	}
+	
+	@ExceptionHandler(InvalidArgumentException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidArgument(InvalidArgumentException ex){
+		ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage());
 
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
 	}
