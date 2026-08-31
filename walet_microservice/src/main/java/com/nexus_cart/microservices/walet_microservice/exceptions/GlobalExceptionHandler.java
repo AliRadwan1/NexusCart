@@ -1,7 +1,6 @@
 package com.nexus_cart.microservices.walet_microservice.exceptions;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,17 +10,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-	
-	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-	    Map<String, String> errors = new HashMap<>();
-	    
-	    ex.getBindingResult().getFieldErrors().forEach(error -> 
-	        errors.put(error.getField(), error.getDefaultMessage())
-	    );
 
-	    // Returns HTTP 400 with payload like: { "amount": "Deposit amount must be greater than 0" }
-	    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+		String validationErrors = ex.getBindingResult().getFieldErrors().stream()
+				.map(error -> error.getField() + ": " + error.getDefaultMessage())
+				.collect(Collectors.joining(", "));
+
+		ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Validation Failed", validationErrors);
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
 	}
 
 	// ----------------------------------------------------
@@ -48,16 +46,16 @@ public class GlobalExceptionHandler {
 
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
 	}
-	
+
 	@ExceptionHandler(InvalidNewPasswordException.class)
 	public ResponseEntity<ErrorResponse> handleInvalidNewPassword(InvalidNewPasswordException ex) {
 		ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage());
 
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
 	}
-	
+
 	@ExceptionHandler(InvalidArgumentException.class)
-	public ResponseEntity<ErrorResponse> handleInvalidArgument(InvalidArgumentException ex){
+	public ResponseEntity<ErrorResponse> handleInvalidArgument(InvalidArgumentException ex) {
 		ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage());
 
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -95,4 +93,10 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
 	}
 
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
+		ErrorResponse error = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal Server Error", ex.getMessage());
+
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+	}
 }
