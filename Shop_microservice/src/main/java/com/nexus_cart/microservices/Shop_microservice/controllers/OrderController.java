@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nexus_cart.microservices.Shop_microservice.dto.CheckoutRequest;
+import com.nexus_cart.microservices.Shop_microservice.dto.OrderCancelRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.OrderResponse;
 import com.nexus_cart.microservices.Shop_microservice.orders.OrderService;
 
@@ -90,11 +91,11 @@ public class OrderController {
 	 * @param orderId Unique identifier of the order to cancel.
 	 * @return {@link ResponseEntity} containing the updated {@link OrderResponse} with status CANCELLED and HTTP status 200 OK.
 	 */
-	@PutMapping("/{orderId}/cancel")
+	@PutMapping("/cancel")
 	public ResponseEntity<OrderResponse> cancelOrder(Authentication authentication, 
-			@PathVariable String orderId) {
+			@Valid @RequestBody OrderCancelRequest request) {
 		String userId = getAuthenticatedUserId(authentication);
-		OrderResponse response = orderService.cancelOrderById(orderId, userId);
+		OrderResponse response = orderService.cancelOrderById(request.getOrderId(), userId);
 		
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}

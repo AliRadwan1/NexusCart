@@ -1,0 +1,8 @@
+CREATE DATABASE IF NOT EXISTS inventory_db;
+USE inventory_db;
+
+CREATE TABLE IF NOT EXISTS inventory (
+    product_id VARCHAR(36) PRIMARY KEY,
+    quantity INT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
