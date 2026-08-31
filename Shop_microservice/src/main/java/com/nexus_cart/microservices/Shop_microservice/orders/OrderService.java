@@ -288,7 +288,7 @@ public class OrderService {
 	
 	@CircuitBreaker(name = "inventoryService", fallbackMethod = "inventoryFallback")
     public void addStockWithCircuitBreaker(InventoryRequest request) {
-        inventoryClient.createAddStock(request);
+        inventoryClient.addStock(request);
     }
 
     @CircuitBreaker(name = "walletService", fallbackMethod = "walletWithdrawFallback")

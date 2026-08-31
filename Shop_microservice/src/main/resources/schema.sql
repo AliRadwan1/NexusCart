@@ -1,46 +1,51 @@
-CREATE DATABASE shop_db;
-
+CREATE DATABASE IF NOT EXISTS shop_db;
 USE shop_db;
 
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100),
     category VARCHAR(100),
     price DECIMAL(10, 2)
-); --
+);
 
-CREATE TABLE carts (
+CREATE TABLE IF NOT EXISTS product_images (
+    product_id VARCHAR(36),
+    image_url VARCHAR(255),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS carts (
     id VARCHAR(36) PRIMARY KEY,
-    userId VARCHAR(36),
+    user_id VARCHAR(36),
     status VARCHAR(20)
-); --
+);
 
-CREATE TABLE cart_items (
+CREATE TABLE IF NOT EXISTS cart_items (
     id VARCHAR(36) PRIMARY KEY,
-    cartId VARCHAR(36),
-    productId VARCHAR(36),
+    cart_id VARCHAR(36),
+    product_id VARCHAR(36),
     quantity INT,
-    FOREIGN KEY (cartId) REFERENCES carts(id)
-); --
+    FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE
+);
 
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id VARCHAR(36) PRIMARY KEY,
-    userId VARCHAR(36),
+    user_id VARCHAR(36),
     total DECIMAL(10, 2),
     status VARCHAR(20)
-); --
+);
 
-CREATE TABLE order_items (
+CREATE TABLE IF NOT EXISTS order_items (
     id VARCHAR(36) PRIMARY KEY,
-    orderId VARCHAR(36),
-    productId VARCHAR(36),
+    order_id VARCHAR(36),
+    product_id VARCHAR(36),
     quantity INT,
-    FOREIGN KEY (orderId) REFERENCES orders(id)
-); --
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
 
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
     id VARCHAR(36) PRIMARY KEY,
-    orderId VARCHAR(36),
+    order_id VARCHAR(36),
     status VARCHAR(20),
-    transactionId VARCHAR(36)
-); --
+    transaction_id VARCHAR(36)
+);
