@@ -1,43 +1,43 @@
 package com.nexus_cart.microservices.inventory_microservice.inventory;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "inventory")
 public class Inventory {
-	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
-	private String id;
 
-	@Column(name = "product_id")
+	@Id
+	@Column(name = "product_id", nullable = false, unique = true)
 	private String productId;
 
-	private int quantity;
+	@Column(name = "quantity", nullable = false)
+	private Integer quantity;
+
+	@Column(name = "updated_at", nullable = false)
+	private LocalDateTime updatedAt;
 
 	public Inventory() {
-		super();
 	}
-
-	public Inventory(String id, String productId, int quantity) {
-		super();
-		this.id = id;
+	
+	public Inventory(String productId, Integer quantity) {
 		this.productId = productId;
 		this.quantity = quantity;
 	}
 
-	public String getId() {
-		return id;
+	@PrePersist
+	@PreUpdate
+	protected void onSaveOrUpdate() {
+		this.updatedAt = LocalDateTime.now();
 	}
 
-	public void setId(String id) {
-		this.id = id;
-	}
-
+	// Getters and Setters
 	public String getProductId() {
 		return productId;
 	}
@@ -46,11 +46,19 @@ public class Inventory {
 		this.productId = productId;
 	}
 
-	public int getQuantity() {
+	public Integer getQuantity() {
 		return quantity;
 	}
 
-	public void setQuantity(int quantity) {
+	public void setQuantity(Integer quantity) {
 		this.quantity = quantity;
+	}
+
+	public LocalDateTime getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
 	}
 }
