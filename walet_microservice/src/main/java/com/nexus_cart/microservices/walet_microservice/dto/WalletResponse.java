@@ -1,60 +1,64 @@
-package com.nexus_cart.microservices.walet_microservice.wallets;
+package com.nexus_cart.microservices.walet_microservice.dto;
 
 import java.math.BigDecimal;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
-@Entity
-@Table(name = "wallets")
-public class Wallet {
-	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
+public class WalletResponse {
 	private String id;
-	
-	@Column(name = "user_id")
 	private String userId;
-	
 	private BigDecimal balance;
 
-	public Wallet() {
-		super();
-	}
-
-	public Wallet(String id, String userId, BigDecimal balance) {
+	/**
+	 * @param id
+	 * @param userId
+	 * @param balance
+	 */
+	public WalletResponse(String id, String userId, BigDecimal balance) {
 		super();
 		this.id = id;
 		this.userId = userId;
 		this.balance = balance;
 	}
 
+	/**
+	 * @return the id
+	 */
 	public String getId() {
 		return id;
 	}
 
+	/**
+	 * @param id the id to set
+	 */
 	public void setId(String id) {
 		this.id = id;
 	}
 
+	/**
+	 * @return the userId
+	 */
 	public String getUserId() {
 		return userId;
 	}
 
+	/**
+	 * @param userId the userId to set
+	 */
 	public void setUserId(String userId) {
 		this.userId = userId;
 	}
 
+	/**
+	 * @return the balance
+	 */
 	public BigDecimal getBalance() {
 		return balance;
 	}
 
+	/**
+	 * @param balance the balance to set
+	 */
 	public void setBalance(BigDecimal balance) {
 		this.balance = balance;
 	}
-	
-	
+
 }

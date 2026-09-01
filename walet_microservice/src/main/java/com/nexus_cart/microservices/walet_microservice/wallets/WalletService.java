@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.nexus_cart.microservices.walet_microservice.dto.WalletTransactionRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.WalletTransactionResponse;
 import com.nexus_cart.microservices.walet_microservice.exceptions.InsufficientBalanceException;
 import com.nexus_cart.microservices.walet_microservice.exceptions.InvalidAmountException;
@@ -74,15 +75,15 @@ public class WalletService {
 	 * @throws InvalidAmountException If amount is null or less than or equal to zero.
 	 */
 	@Transactional
-	public WalletTransactionResponse deposit(String userId, BigDecimal amount) {
-		Wallet wallet = walletRepository.findByUserId(userId)
-				.orElseThrow(() -> new WalletNotFoundException(userId));
+	public WalletTransactionResponse deposit(WalletTransactionRequest request) {
+		Wallet wallet = walletRepository.findByUserId(request.getUserId())
+				.orElseThrow(() -> new WalletNotFoundException(request.getUserId()));
 
-		if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+		if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
 			throw new InvalidAmountException("Deposit amount must be greater than 0");
 		}
 
-		BigDecimal newBalance = wallet.getBalance().add(amount);
+		BigDecimal newBalance = wallet.getBalance().add(request.getAmount());
 		wallet.setBalance(newBalance);
 
 		walletRepository.save(wallet);
@@ -90,10 +91,10 @@ public class WalletService {
 		Transaction transaction = new Transaction();
 		transaction.setWalletId(wallet.getId());
 		transaction.setType(TransactionType.DEPOSIT);
-		transaction.setAmount(amount);
+		transaction.setAmount(request.getAmount());
 		Transaction savedTransaction = transactionRepository.save(transaction);
 
-		return new WalletTransactionResponse(savedTransaction.getId(), wallet.getId(), amount, newBalance);
+		return new WalletTransactionResponse(savedTransaction.getId(), wallet.getId(), request.getAmount(), newBalance);
 	}
 
 	/**
@@ -108,19 +109,19 @@ public class WalletService {
 	 * @throws InsufficientBalanceException If the requested amount exceeds current balance.
 	 */
 	@Transactional
-	public WalletTransactionResponse withdraw(String userId, BigDecimal amount) {
-		Wallet wallet = walletRepository.findByUserId(userId)
-				.orElseThrow(() -> new WalletNotFoundException(userId));
+	public WalletTransactionResponse withdraw(WalletTransactionRequest request) {
+		Wallet wallet = walletRepository.findByUserId(request.getUserId())
+				.orElseThrow(() -> new WalletNotFoundException(request.getUserId()));
 
-		if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+		if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
 			throw new InvalidAmountException("Withdrawal amount must be greater than 0");
 		}
 
-		if (amount.compareTo(wallet.getBalance()) > 0) {
+		if (request.getAmount().compareTo(wallet.getBalance()) > 0) {
 			throw new InsufficientBalanceException("Amount of withdrawal exceeded the balance");
 		}
 
-		BigDecimal newBalance = wallet.getBalance().subtract(amount);
+		BigDecimal newBalance = wallet.getBalance().subtract(request.getAmount());
 		wallet.setBalance(newBalance);
 
 		walletRepository.save(wallet);
@@ -128,10 +129,10 @@ public class WalletService {
 		Transaction transaction = new Transaction();
 		transaction.setWalletId(wallet.getId());
 		transaction.setType(TransactionType.WITHDRAWAL);
-		transaction.setAmount(amount);
+		transaction.setAmount(request.getAmount());
 		Transaction savedTransaction = transactionRepository.save(transaction);
 
-		return new WalletTransactionResponse(savedTransaction.getId(), wallet.getId(), amount, newBalance);
+		return new WalletTransactionResponse(savedTransaction.getId(), wallet.getId(), request.getAmount(), newBalance);
 	}
 
 	/**

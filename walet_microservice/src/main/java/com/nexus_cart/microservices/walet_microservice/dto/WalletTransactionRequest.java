@@ -2,14 +2,15 @@ package com.nexus_cart.microservices.walet_microservice.dto;
 
 import java.math.BigDecimal;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 public class WalletTransactionRequest {
-	@NotBlank
+//	@NotBlank
 	private String userId;
 	
-//	@NotNull
-//	@Positive
+	@NotNull
+	@Positive
 	private BigDecimal amount;
 
 	public WalletTransactionRequest() {
