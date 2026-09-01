@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nexus_cart.microservices.walet_microservice.dto.ChangePasswordRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.DeleteAccountRequest;
+import com.nexus_cart.microservices.walet_microservice.dto.LoginRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.RegisterRequest;
 import com.nexus_cart.microservices.walet_microservice.dto.UpdateUserInfoRequest;
 import com.nexus_cart.microservices.walet_microservice.exceptions.InvalidArgumentException;
@@ -76,13 +77,13 @@ public class UserService {
 	 * @throws UserNotFoundException       If no user account matches the provided email.
 	 * @throws UserAuthenticationException If the password does not match or is null.
 	 */
-	public User loginUser(String email, String password) {
-		String normalizedEmail = (email != null) ? email.trim().toLowerCase() : null;
+	public User loginUser(LoginRequest request) {
+		String normalizedEmail = (request.getEmail() != null) ? request.getEmail().trim().toLowerCase() : null;
 
 		User user = userRepository.findByEmail(normalizedEmail)
 				.orElseThrow(() -> new UserNotFoundException("No user found with this email"));
 
-		if (password == null || !passwordEncoder.matches(password, user.getPassword())) {
+		if (request.getPassword() == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
 			throw new UserAuthenticationException("Invalid email or password");
 		}
 

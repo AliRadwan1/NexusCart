@@ -3,7 +3,7 @@ package com.nexus_cart.microservices.walet_microservice.dto;
 import jakarta.validation.constraints.NotBlank;
 
 public class ChangePasswordRequest {
-	@NotBlank(message = "Id is required")
+//	@NotBlank(message = "Id is required")
 	private String id;
 
 	@NotBlank(message = "Password is required")

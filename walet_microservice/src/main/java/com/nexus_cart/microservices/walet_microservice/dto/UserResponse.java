@@ -1,34 +1,20 @@
 package com.nexus_cart.microservices.walet_microservice.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-
-public class UpdateUserInfoRequest {
-//	@NotBlank(message = "id is required")
-	private String id;
-
-	@NotBlank(message = "First name is required")
-	private String firstName;
-
-	@NotBlank(message = "Last name is required")
-	private String lastName;
-
-	@NotBlank(message = "Email is required")
-	@Email(message = "Invalid email format")
-	private String email;
+public class UserResponse {
+	String firstName;
+	String lastName;
+	String email;
 
 	/**
-	 * @return the id
+	 * @param firstName
+	 * @param lastName
+	 * @param email
 	 */
-	public String getId() {
-		return id;
-	}
-
-	/**
-	 * @param id the id to set
-	 */
-	public void setId(String id) {
-		this.id = id;
+	public UserResponse(String firstName, String lastName, String email) {
+		super();
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.email = email;
 	}
 
 	/**
