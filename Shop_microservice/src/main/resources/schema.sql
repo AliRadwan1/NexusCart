@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS products (
     id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100),
     category VARCHAR(100),
-    price DECIMAL(10, 2)
+    price DECIMAL(10, 2),
+    currency VARCHAR(10) NOT NULL DEFAULT 'EGP'
 );
 
 CREATE TABLE IF NOT EXISTS product_images (
@@ -31,6 +32,8 @@ CREATE TABLE IF NOT EXISTS cart_items (
 CREATE TABLE IF NOT EXISTS orders (
     id VARCHAR(36) PRIMARY KEY,
     user_id VARCHAR(36),
+    address VARCHAR(255),
+    phone_number VARCHAR(20),
     total DECIMAL(10, 2),
     status VARCHAR(20)
 );

@@ -8,22 +8,30 @@ import com.nexus_cart.microservices.Shop_microservice.orders.OrderStatus;
 public class OrderResponse {
 	private String id;
 	private String userId;
+	private String address;
+	private String phoneNumber;
 	private OrderStatus status;
 	private BigDecimal total;
 	private List<OrderItemResponse> items;
 
+	
+
 	/**
 	 * @param id
 	 * @param userId
+	 * @param address
+	 * @param phoneNumber
 	 * @param status
 	 * @param total
 	 * @param items
 	 */
-	public OrderResponse(String id, String userId, OrderStatus status, BigDecimal total,
-			List<OrderItemResponse> items) {
+	public OrderResponse(String id, String userId, String address, String phoneNumber, OrderStatus status,
+			BigDecimal total, List<OrderItemResponse> items) {
 		super();
 		this.id = id;
 		this.userId = userId;
+		this.address = address;
+		this.phoneNumber = phoneNumber;
 		this.status = status;
 		this.total = total;
 		this.items = items;
@@ -97,6 +105,34 @@ public class OrderResponse {
 	 */
 	public void setItems(List<OrderItemResponse> items) {
 		this.items = items;
+	}
+
+	/**
+	 * @return the address
+	 */
+	public String getAddress() {
+		return address;
+	}
+
+	/**
+	 * @param address the address to set
+	 */
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
+	/**
+	 * @return the phoneNumber
+	 */
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+
+	/**
+	 * @param phoneNumber the phoneNumber to set
+	 */
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
 	}
 
 }

@@ -46,10 +46,15 @@ public class ProductService {
 			throw new ProductAlreadyExistsException("Product with name '" + request.getName() + "' already exists");
 		}
 
-		Product product = new Product(request.getName(), request.getCategory(), request.getPrice(), request.getImageUrls());
+		Product product = new Product(
+				request.getName(), 
+				request.getCategory(), 
+				request.getPrice(), 
+				request.getCurrency(),
+				request.getImageUrls());
 		Product savedProduct = productRepository.save(product);
 		
-		int stockToRegister = (request.getInitialStock() > 0) ? request.getInitialStock() : 1;
+		int stockToRegister = (request.getInitialStock() > 0) ? request.getInitialStock() : 0;
 		int currentStock = stockToRegister;
 		
 		try {
@@ -170,11 +175,12 @@ public class ProductService {
 	 */
 	private ProductResponse mapToProductResponse(Product product, int quantity) {
 		return new ProductResponse(
-				product.getId(),
-				product.getName(),
-				product.getCategory(),
-				product.getPrice(),
-				quantity,
+				product.getId(), 
+				product.getName(), 
+				product.getCategory(), 
+				product.getPrice(), 
+				product.getCurrency(), 
+				quantity, 
 				product.getImageUrls());
 	}
 }

@@ -137,7 +137,13 @@ public class OrderService {
 	    // Save Order, Payment, and Cart entities with compensating rollback
 	    try {
 			// 5. Create Order entity
-		    Order order = new Order(request.getUserId(), OrderStatus.COMPLETED, grandTotal);
+	    	Order order = new Order(
+	    			request.getUserId(), 
+	    			request.getAddress(), 
+	    			request.getPhoneNumber(), 
+	    			OrderStatus.COMPLETED, 
+	    			grandTotal);
+	    	
 		    for (CartItem item : cart.getItems()) {
 		        OrderItem orderItem = new OrderItem(order, item.getProductId(), item.getQuantity());
 		        order.addOrderItem(orderItem);
@@ -339,10 +345,12 @@ public class OrderService {
 		}
 		
 		return new OrderResponse(
-						order.getId(), 
-						order.getUserId(), 
-						order.getStatus(), 
-						order.getTotal(), 
-						itemResponses);
+		        order.getId(), 
+		        order.getUserId(), 
+		        order.getAddress(),
+		        order.getPhoneNumber(),
+		        order.getStatus(), 
+		        order.getTotal(), 
+		        itemResponses);
 	}
 }

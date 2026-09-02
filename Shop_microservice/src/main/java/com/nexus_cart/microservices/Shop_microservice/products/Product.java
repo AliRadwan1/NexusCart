@@ -24,6 +24,9 @@ public class Product {
 	private String name;
 	private String category;
 	private BigDecimal price;
+	
+	@Column(nullable = false, length = 10)
+	private String currency = "EGP";
 
 	@ElementCollection
 	@CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
@@ -38,14 +41,15 @@ public class Product {
 	 * @param name
 	 * @param category
 	 * @param price
+	 * @param currency
 	 * @param imageUrls
 	 */
-	public Product(String name, String category, BigDecimal price, List<String> imageUrls) {
-		super();
-		this.name = name;
-		this.category = category;
-		this.price = price;
-		this.imageUrls = imageUrls;
+	public Product(String name, String category, BigDecimal price, String currency, List<String> imageUrls) {
+	    this.name = name;
+	    this.category = category;
+	    this.price = price;
+	    this.currency = (currency != null && !currency.isBlank()) ? currency : "EGP";
+	    this.imageUrls = imageUrls;
 	}
 
 	/**
@@ -102,6 +106,20 @@ public class Product {
 	 */
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	/**
+	 * @return the currency
+	 */
+	public String getCurrency() {
+		return currency;
+	}
+
+	/**
+	 * @param currency the currency to set
+	 */
+	public void setCurrency(String currency) {
+		this.currency = currency;
 	}
 
 	/**

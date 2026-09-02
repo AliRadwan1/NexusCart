@@ -21,6 +21,7 @@ public class ProductRequest {
 	@Positive
 	private BigDecimal price;
 	
+	private String currency;	
 	private int initialStock;
 	private List<String> imageUrls;
 
@@ -29,17 +30,25 @@ public class ProductRequest {
 	}
 
 	/**
-	 * 
 	 * @param name
 	 * @param category
 	 * @param price
+	 * @param currency
+	 * @param initialStock
+	 * @param imageUrls
 	 */
-	public ProductRequest(@NotBlank String name, @NotBlank String category, @NotNull @Positive BigDecimal price) {
+	public ProductRequest(@NotBlank String name, @NotBlank String category, @NotNull @Positive BigDecimal price,
+			@NotBlank String currency, int initialStock, List<String> imageUrls) {
 		super();
 		this.name = name;
 		this.category = category;
 		this.price = price;
+		this.currency = currency;
+		this.initialStock = initialStock;
+		this.imageUrls = imageUrls;
 	}
+
+
 
 	/**
 	 * 
@@ -87,6 +96,20 @@ public class ProductRequest {
 	 */
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	/**
+	 * @return the currency
+	 */
+	public String getCurrency() {
+		return currency;
+	}
+
+	/**
+	 * @param currency the currency to set
+	 */
+	public void setCurrency(String currency) {
+		this.currency = currency;
 	}
 
 	/**

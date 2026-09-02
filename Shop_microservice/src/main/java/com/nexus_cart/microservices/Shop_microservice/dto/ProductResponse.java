@@ -8,6 +8,7 @@ public class ProductResponse {
 	private String name;
 	private String category;
 	private BigDecimal price;
+	private String currency;
 	private int quantity;
 	private List<String> imageUrls;
 
@@ -15,24 +16,29 @@ public class ProductResponse {
 		super();
 	}
 
+
 	/**
 	 * @param id
 	 * @param name
 	 * @param category
 	 * @param price
+	 * @param currency
 	 * @param quantity
 	 * @param imageUrls
 	 */
-	public ProductResponse(String id, String name, String category, BigDecimal price, int quantity,
+	public ProductResponse(String id, String name, String category, BigDecimal price, String currency, int quantity,
 			List<String> imageUrls) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.category = category;
 		this.price = price;
+		this.currency = currency;
 		this.quantity = quantity;
 		this.imageUrls = imageUrls;
 	}
+
+
 
 	/**
 	 * @return the id
@@ -89,6 +95,22 @@ public class ProductResponse {
 	public void setPrice(BigDecimal price) {
 		this.price = price;
 	}
+
+	/**
+	 * @return the currency
+	 */
+	public String getCurrency() {
+		return currency;
+	}
+
+
+	/**
+	 * @param currency the currency to set
+	 */
+	public void setCurrency(String currency) {
+		this.currency = currency;
+	}
+
 
 	/**
 	 * @return the quantity

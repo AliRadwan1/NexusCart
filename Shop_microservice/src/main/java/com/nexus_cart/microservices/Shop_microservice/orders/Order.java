@@ -24,6 +24,11 @@ public class Order {
 
 	@Column(name = "user_id")
 	private String userId;
+	
+	private String address;
+	
+	@Column(name = "phone_number")
+	private String phoneNumber;
 
 	@Enumerated(EnumType.STRING)
 	private OrderStatus status;
@@ -32,6 +37,7 @@ public class Order {
 	private List<OrderItem> items = new ArrayList<>();
 
 	private BigDecimal total;
+	
 
 	public Order() {
 		super();
@@ -39,15 +45,17 @@ public class Order {
 
 	/**
 	 * @param userId
+	 * @param address
+	 * @param phoneNumber
 	 * @param status
-	 * @param items
 	 * @param total
 	 */
-	public Order(String userId, OrderStatus status, BigDecimal total) {
-		super();
-		this.userId = userId;
-		this.status = status;
-		this.total = total;
+	public Order(String userId, String address, String phoneNumber, OrderStatus status, BigDecimal total) {
+	    this.userId = userId;
+	    this.address = address;
+	    this.phoneNumber = phoneNumber;
+	    this.status = status;
+	    this.total = total;
 	}
 
 	/**
@@ -127,6 +135,34 @@ public class Order {
 	public void addOrderItem(OrderItem item) {
 		items.add(item);
 		item.setOrder(this);
+	}
+
+	/**
+	 * @return the address
+	 */
+	public String getAddress() {
+		return address;
+	}
+
+	/**
+	 * @param address the address to set
+	 */
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
+	/**
+	 * @return the phoneNumber
+	 */
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+
+	/**
+	 * @param phoneNumber the phoneNumber to set
+	 */
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
 	}
 
 }
