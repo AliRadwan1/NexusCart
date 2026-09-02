@@ -11,10 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.nexus_cart.microservices.Shop_microservice.clients.InventoryClient;
+import com.nexus_cart.microservices.Shop_microservice.dto.DeleteProductRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.InventoryRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.InventoryResponse;
 import com.nexus_cart.microservices.Shop_microservice.dto.ProductRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.ProductResponse;
+import com.nexus_cart.microservices.Shop_microservice.dto.UpdateProductRequest;
 import com.nexus_cart.microservices.Shop_microservice.exceptions.ProductAlreadyExistsException;
 import com.nexus_cart.microservices.Shop_microservice.exceptions.ProductNotFoundException;
 
@@ -148,6 +150,48 @@ public class ProductService {
 		}
 
 		return mapToProductResponse(product, quantity);
+	}
+	
+	/**
+     * Updates fields and metadata for an existing product in the catalog.
+     * 
+     * @param request The {@link UpdateProductRequest} containing target product ID and updated fields.
+     * @return The updated product details as a {@link ProductResponse}.
+     * @throws ProductNotFoundException If no product exists with the specified ID.
+     */
+	public ProductResponse updateProduct(UpdateProductRequest request) {
+		Product product = productRepository.findById(request.getId())
+				.orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + request.getId()));
+		
+		product.setName(request.getName());
+		product.setCategory(request.getCategory());
+		product.setPrice(request.getPrice());
+		
+		if (request.getCurrency() != null && !request.getCurrency().isBlank()) {
+			product.setCurrency(request.getCurrency());
+		}
+		
+		if (request.getImageUrls() != null) {
+	        product.setImageUrls(request.getImageUrls());
+	    }
+		
+		Product updatedProduct = productRepository.save(product);
+		int currentStock = fetchStockMap().getOrDefault(updatedProduct.getId(), 0);
+		
+		return mapToProductResponse(updatedProduct, currentStock);
+	}
+	
+	/**
+     * Removes a product record from the catalog database.
+     * 
+     * @param request The {@link DeleteProductRequest} containing the target product ID.
+     * @throws ProductNotFoundException If no product exists with the specified ID.
+     */
+	public void deleteProduct(DeleteProductRequest request) {
+		Product product = productRepository.findById(request.getId())
+				.orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + request.getId()));
+		
+		productRepository.deleteById(product.getId());
 	}
 	
 	/**
