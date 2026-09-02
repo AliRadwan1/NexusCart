@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,6 +31,10 @@ public class User {
 	// passwords are never leaked in API outputs).
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	private String password;
+	
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private Role role = Role.ROLE_USER;
 
 	public User() {
 		super();
@@ -80,6 +86,20 @@ public class User {
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	/**
+	 * @return the role
+	 */
+	public Role getRole() {
+		return role;
+	}
+
+	/**
+	 * @param role the role to set
+	 */
+	public void setRole(Role role) {
+		this.role = role;
 	}
 
 }
