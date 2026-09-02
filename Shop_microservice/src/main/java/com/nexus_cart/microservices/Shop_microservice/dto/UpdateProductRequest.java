@@ -8,17 +8,17 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public class UpdateProductRequest {
-	@NotBlank
+	@NotBlank(message = "Id is required")
 	private String id;
 
-	@NotBlank
+	@NotBlank(message = "Name is required")
 	private String name;
 
-	@NotBlank
+	@NotBlank(message = "Category is required")
 	private String category;
 
-	@NotNull
-	@Positive
+	@NotNull(message = "Price is required")
+	@Positive(message = "Price must be Positive")
 	private BigDecimal price;
 
 	private String currency;

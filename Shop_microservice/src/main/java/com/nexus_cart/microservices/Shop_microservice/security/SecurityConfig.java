@@ -25,11 +25,14 @@ public class SecurityConfig {
                     // Public read access for store catalog and documentation
                     .requestMatchers(HttpMethod.GET, "/products/**", "/api/products/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     
-                    // Admin-only operations for product catalog mutations
+                 // Product Management (Admin Only)
                     .requestMatchers(HttpMethod.POST, "/products", "/api/products").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.PUT, "/products/*", "/api/products/*").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.POST, "/products/delete", "/api/products/delete").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.DELETE, "/products/*", "/api/products/*").hasRole("ADMIN")
+                    
+                    // Order Management (Admin Only)
+                    .requestMatchers("/api/orders/admin/**", "/orders/admin/**").hasRole("ADMIN")
                     
                     .anyRequest().authenticated()
             );

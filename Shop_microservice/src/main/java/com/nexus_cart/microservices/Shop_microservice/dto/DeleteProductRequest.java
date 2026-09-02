@@ -3,7 +3,7 @@ package com.nexus_cart.microservices.Shop_microservice.dto;
 import jakarta.validation.constraints.NotBlank;
 
 public class DeleteProductRequest {
-	@NotBlank
+	@NotBlank(message = "Id is required")
 	private String id;
 
 	/**

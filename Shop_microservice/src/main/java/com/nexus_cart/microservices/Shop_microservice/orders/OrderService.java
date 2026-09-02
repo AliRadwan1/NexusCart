@@ -22,6 +22,7 @@ import com.nexus_cart.microservices.Shop_microservice.dto.CheckoutRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.InventoryRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.OrderItemResponse;
 import com.nexus_cart.microservices.Shop_microservice.dto.OrderResponse;
+import com.nexus_cart.microservices.Shop_microservice.dto.UpdateOrderStatusRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.WalletTransactionRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.WalletTransactionResponse;
 import com.nexus_cart.microservices.Shop_microservice.exceptions.OrderNotFoundException;
@@ -282,6 +283,38 @@ public class OrderService {
 		
 		return mapToOrderResponse(savedOrder);
 	}
+	
+	/**
+     * Retrieves all customer orders across the entire platform. Admin only.
+     *
+     * @return List of {@link OrderResponse} records for all platform orders.
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrdersForAdmin() {
+        List<Order> orders = orderRepository.findAll();
+        
+        return orders.stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Manually overrides the status of any customer order in the system. Admin only.
+     *
+     * @param request The {@link UpdateOrderStatusRequest} payload containing target order ID and status.
+     * @return Updated {@link OrderResponse} entity representation.
+     * @throws OrderNotFoundException If no order is found matching the provided order ID.
+     */
+    @Transactional
+    public OrderResponse updateOrderStatusByAdmin(UpdateOrderStatusRequest request) {
+        Order order = orderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + request.getOrderId()));
+
+        order.setStatus(request.getStatus());
+        Order updatedOrder = orderRepository.save(order);
+        
+        return mapToOrderResponse(updatedOrder);
+    }
 	
 	// -----------------------------------------
 	// Resilience4j Protected Wrapper Method

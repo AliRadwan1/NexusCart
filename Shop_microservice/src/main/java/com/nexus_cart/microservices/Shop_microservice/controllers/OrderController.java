@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nexus_cart.microservices.Shop_microservice.dto.CheckoutRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.OrderCancelRequest;
 import com.nexus_cart.microservices.Shop_microservice.dto.OrderResponse;
+import com.nexus_cart.microservices.Shop_microservice.dto.UpdateOrderStatusRequest;
 import com.nexus_cart.microservices.Shop_microservice.orders.OrderService;
 
 import jakarta.validation.Valid;
@@ -99,4 +100,29 @@ public class OrderController {
 		
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
+	
+	/**
+     * Retrieves all platform customer orders. Admin only.
+     * 
+     * @return {@link ResponseEntity} containing a list of all {@link OrderResponse} records and 200 OK.
+     */
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
+        List<OrderResponse> orders = orderService.getAllOrdersForAdmin();
+        
+        return ResponseEntity.ok(orders);
+    }
+    
+    /**
+     * Manually updates the status of a specific order. Admin only.
+     * 
+     * @param request Validated {@link UpdateOrderStatusRequest} body.
+     * @return {@link ResponseEntity} containing the updated {@link OrderResponse} and 200 OK.
+     */
+    @PutMapping("/admin/update")
+    public ResponseEntity<OrderResponse> updateOrderStatus(@Valid @RequestBody UpdateOrderStatusRequest request) {
+        OrderResponse updatedOrder = orderService.updateOrderStatusByAdmin(request);
+        
+        return ResponseEntity.ok(updatedOrder);
+    }
 }

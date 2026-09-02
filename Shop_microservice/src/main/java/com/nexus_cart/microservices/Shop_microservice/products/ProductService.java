@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.nexus_cart.microservices.Shop_microservice.clients.InventoryClient;
 import com.nexus_cart.microservices.Shop_microservice.dto.DeleteProductRequest;
@@ -159,6 +160,7 @@ public class ProductService {
      * @return The updated product details as a {@link ProductResponse}.
      * @throws ProductNotFoundException If no product exists with the specified ID.
      */
+	@Transactional
 	public ProductResponse updateProduct(UpdateProductRequest request) {
 		Product product = productRepository.findById(request.getId())
 				.orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + request.getId()));
@@ -187,6 +189,7 @@ public class ProductService {
      * @param request The {@link DeleteProductRequest} containing the target product ID.
      * @throws ProductNotFoundException If no product exists with the specified ID.
      */
+	@Transactional
 	public void deleteProduct(DeleteProductRequest request) {
 		Product product = productRepository.findById(request.getId())
 				.orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + request.getId()));
