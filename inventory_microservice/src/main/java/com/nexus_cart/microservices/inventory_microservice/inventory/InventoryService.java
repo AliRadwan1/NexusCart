@@ -53,7 +53,7 @@ public class InventoryService {
 			throw new InsufficientStockException("Insufficient stock for product: " + request.getProductId());
 		}
 		
-		int newQuatity = inventory.getQuantity() + request.getQuantity();
+		int newQuatity = inventory.getQuantity() - request.getQuantity();
 		inventory.setQuantity(newQuatity);
 		Inventory saved = inventoryRepository.save(inventory);
 		
